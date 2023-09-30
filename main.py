@@ -37,7 +37,7 @@ while True:
                     print(f"Raw coordinates : {lm.x} -{lm.y}")
                     cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED) # Draw circle at hand landmark
             # Draw the hand landmarks and connections
-            mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
+            # mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
 
     # Show the image in a window named 'Image'
     cv2.imshow('Image', img)
