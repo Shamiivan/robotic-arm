@@ -33,7 +33,6 @@ class HandTracker :
                     h,w,c = img.shape
                     cx, cy,cz = int(lm.x * w ), int(lm.y * h) , int(lm.z * 100)
                     lmlist.extend([cx, cy,cz, lm.x, lm.y])
-                    # lmlist.extend([lm.x, lm.y, lm.z])
             if draw:
                 self.mpDraw.draw_landmarks(img, Hand, self.mpHands.HAND_CONNECTIONS)
     
@@ -88,7 +87,7 @@ def get_min(cap, pos, msg):
             break
 
     
-def main() : 
+def main(): 
     min_max = []
     max_width =0
     min_width = 0
