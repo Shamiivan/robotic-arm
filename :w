@@ -6,7 +6,6 @@ import HandTracker as ht
 import time
 from pySerialTransfer import pySerialTransfer as txfer
 import sys
-import serial 
 
 import numpy as np 
 import sympy as sp
@@ -52,45 +51,21 @@ def get_angles(constrains , coordinates):
     p = 117
     d = 124
 
-    # asshole's script 
     x, y, z = coordinates
-    # calculating retraction distance 
     r = (z - z0) / (z1 - z0) * (p + d - abs(p - d)) + abs(p - d)
-
     alpha = np.arccos((r**2 + p**2 - d**2) / (2 * r * p))
-    alpha = np.pi - alpha
-    alpha = 0.5* alpha
-
     beta = np.arccos((p**2 + d**2 - r**2) / (2 * p * d))
-    # rotation angle 
     theta_y = 0.5 * np.pi - np.arccos(2 / (x1 - x0) * (x - (x1 + x0) / 2))
-
-    # angle between horizontal and line r
     theta_x = np.arcsin(1 / (y1 - y0) * (y - y0))
-    theta_x = np.pi * 0.5 - (theta_x)
-    theta_x = theta_x + alpha
-
-    # convert to degree
-    theta_x = theta_x * 180/np.pi
     
-    m1_angle =  theta_x 
-
-    # convert theta_y to degrees
-    #  theta_x is shoulder rotation 
-    theta_y = theta_y * 180/np.pi * -1
-
-    # adding theta_x and alpha to get M1 angle and converting to degrees
-    #  theta_x is shoulder tilt 
-
-    # Beta is the elbow
+    theta_y = theta_y * 180/np.pi 
+    theta_x = (theta_x + alpha) * 180/np.pi
     beta = beta * 180/np.pi
-    beta = 180 - beta
-
-    print(f"Raw Angles : {alpha}, {beta} , {theta_x}, {theta_y}")
     return [theta_y, theta_x, beta] 
 
-def send_angles(ser, theta_x, theta_y, beta):        
-    pass
+
+    
+    
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -104,12 +79,12 @@ def main():
     print(f"Width : {max_w},  {min_w}")
     print(f"Height : {max_h}, {min_h}")
     print(f"Depth : {max_z} , {min_z}")
+
     try:
-        link = txfer.SerialTransfer('/dev/cu.usbmodem14101')
-
-
-        link.open()
-        time.sleep(2) # allow some time for the Arduino to completely reset
+        # link = txfer.SerialTransfer('/dev/cu.usbmodem14101')
+        
+        # link.open()
+        # time.sleep(2) # allow some time for the Arduino to completely reset
         
         while True:
             success, img = cap.read()
@@ -123,32 +98,22 @@ def main():
                 print(f"Height : {max_h}, {min_h}")
                 print(f"Depth : {max_z}, {min_z}")
                 m1,m2,m3 = get_angles(constrains, [x,y,z]) 
-                m1, m2, m3 = int(m1), int(m2), int(m3)
-                
-                m1 = m1 + 90 
                 print(f"coordinates {x}, {y}, {z}")
                 print(f"Angles {m1},  {m2}, {m3}")
 
 
-                send_size = 0
-                list_ =  []
-                list_size = link.tx_obj(m1)
-                list_size = link.tx_obj(m2)
-                list_size = link.tx_obj(m3)
-                # send_size += list_size# 
+                # send_size = 0
+                # list_ =  [m1,m2,m3]
+                # list_size = link.tx_obj(list_)
+                # send_size += list_size
+                #
+                # link.send(list_size)
+        
 
-                # print(f"list_: {list_}")
-                print(f"list_size: {send_size}")
-
-                if list_size is not None and list_size <= txfer.MAX_PACKET_SIZE:
-                    link.send(list_size)
-                else:
-                    print("Error: List size exceeds maximum packet size.")
-
-                print("Sending data to arduino")
-                ###################################################################
-                # Wait for a response and report any errors while receiving packets
-                ###################################################################
+                # print("Sending data to arduino")
+                # ###################################################################
+                # # Wait for a response and report any errors while receiving packets
+                # ###################################################################
                 # while not link.available():
                 #     if link.status < 0:
                 #         if link.status == txfer.CRC_ERROR:
@@ -159,31 +124,21 @@ def main():
                 #             print('ERROR: STOP_BYTE_ERROR')
                 #         else:
                 #             print('ERROR: {}'.format(link.status))
-
+                # 
                 # ###################################################################
                 # # Parse response list
                 # ###################################################################
                 # rec_list_  = link.rx_obj(obj_type=type(list_),
                 #                          obj_byte_size=list_size,
                 #                          list_format='i')
-                #
+                # 
                 # ###################################################################
                 # # Display the received data
                 # ###################################################################
-                print('SENT: {}'.format(list_))
-                # print('RCVD: {}'.format(rec_list_))
+                # print('SENT: {} {} {}'.format(list_,))
+                # print('RCVD: {} {} {}'.format(rec_list_))
                 # print(' ')
-                while True:
-                    # Check if any data received
-                    if txfer.available():
-                        # Since we know the Arduino sends 3 bytes, we read 3 bytes from the buffer
-                        m1 = transfer.rx_obj(obj_type=ctypes.c_uint8, start_pos=0)
-                        m2 = transfer.rx_obj(obj_type=ctypes.c_uint8, start_pos=1)
-                        m3 = transfer.rx_obj(obj_type=ctypes.c_uint8, start_pos=2)
-
-                        # Process the received data (print it, use it for further logic, etc.)
-                        print(f"Received positions: m1={m1}, m2={m2}, m3={m3}")
-
+                #
             # img = hand_tracking.track(img)
             # Show the image in a window named 'Image'
             cv2.imshow('Image', img)
@@ -194,13 +149,14 @@ def main():
             if key == ord('r'):
                 break
 
+
+            
             
     
     except KeyboardInterrupt:
         try:
             link.close()
             cap.release()
-            pass
         except:
             pass
     
@@ -209,11 +165,9 @@ def main():
         traceback.print_exc()
         
         try:
-            pass
             link.close()
             cap.release()
         except:
             pass
-            
 if __name__ == '__main__':
     main()

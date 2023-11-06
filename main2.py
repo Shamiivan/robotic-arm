@@ -4,9 +4,7 @@ import serial
 import struct
 import HandTracker as ht
 import time
-from pySerialTransfer import pySerialTransfer as txfer
 import sys
-import serial 
 
 import numpy as np 
 import sympy as sp
@@ -89,10 +87,21 @@ def get_angles(constrains , coordinates):
     print(f"Raw Angles : {alpha}, {beta} , {theta_x}, {theta_y}")
     return [theta_y, theta_x, beta] 
 
-def send_angles(ser, theta_x, theta_y, beta):        
-    pass
+def send_angles(ser, theta_x, theta_y, beta):
+    # Construct the packet
+    packet = [theta_x, theta_y, beta]
+
+    bytes_packet = bytes(packet)
+
+    # Send the packet
+    ser.write(bytes_packet)
+
+    print(f"SENT: [{theta_x}, {theta_y}, {beta}]")
+    
 
 def main():
+    ser = serial.Serial("/dev/cu.usbmodem14101",9600)
+    time.sleep(2)
     cap = cv2.VideoCapture(0)
     # hand_tracking = ht.HandTracker()
 
@@ -104,12 +113,12 @@ def main():
     print(f"Width : {max_w},  {min_w}")
     print(f"Height : {max_h}, {min_h}")
     print(f"Depth : {max_z} , {min_z}")
+
     try:
-        link = txfer.SerialTransfer('/dev/cu.usbmodem14101')
+        # link = txfer.SerialTransfer('/dev/cu.usbmodem14101')
 
-
-        link.open()
-        time.sleep(2) # allow some time for the Arduino to completely reset
+        # link.open()
+        # time.sleep(2) # allow some time for the Arduino to completely reset
         
         while True:
             success, img = cap.read()
@@ -128,24 +137,32 @@ def main():
                 m1 = m1 + 90 
                 print(f"coordinates {x}, {y}, {z}")
                 print(f"Angles {m1},  {m2}, {m3}")
+                send_angles(ser, m1,m2,m3)
+
+                while not ser.in_waiting:
+                    print(".", end="")
+                    time.sleep(0.1)
+            
+                print("")
+
+                received = ser.read(ser.in_waiting)
+                print(f"RECEIVED: {list(received)}")
 
 
-                send_size = 0
-                list_ =  []
-                list_size = link.tx_obj(m1)
-                list_size = link.tx_obj(m2)
-                list_size = link.tx_obj(m3)
+                # send_size = 0
+                # list_ =  [m1,m2,m3]
+                # list_size = link.tx_obj(list_)
                 # send_size += list_size# 
 
                 # print(f"list_: {list_}")
-                print(f"list_size: {send_size}")
+                # print(f"list_size: {list_size}")
 
-                if list_size is not None and list_size <= txfer.MAX_PACKET_SIZE:
-                    link.send(list_size)
-                else:
-                    print("Error: List size exceeds maximum packet size.")
-
-                print("Sending data to arduino")
+                # if list_size is not None and list_size <= txfer.MAX_PACKET_SIZE:
+                #     link.send(list_size)
+                # else:
+                #     print("Error: List size exceeds maximum packet size.")
+                #
+                # print("Sending data to arduino")
                 ###################################################################
                 # Wait for a response and report any errors while receiving packets
                 ###################################################################
@@ -159,7 +176,7 @@ def main():
                 #             print('ERROR: STOP_BYTE_ERROR')
                 #         else:
                 #             print('ERROR: {}'.format(link.status))
-
+                #
                 # ###################################################################
                 # # Parse response list
                 # ###################################################################
@@ -170,19 +187,9 @@ def main():
                 # ###################################################################
                 # # Display the received data
                 # ###################################################################
-                print('SENT: {}'.format(list_))
+                # print('SENT: {}'.format(list_))
                 # print('RCVD: {}'.format(rec_list_))
                 # print(' ')
-                while True:
-                    # Check if any data received
-                    if txfer.available():
-                        # Since we know the Arduino sends 3 bytes, we read 3 bytes from the buffer
-                        m1 = transfer.rx_obj(obj_type=ctypes.c_uint8, start_pos=0)
-                        m2 = transfer.rx_obj(obj_type=ctypes.c_uint8, start_pos=1)
-                        m3 = transfer.rx_obj(obj_type=ctypes.c_uint8, start_pos=2)
-
-                        # Process the received data (print it, use it for further logic, etc.)
-                        print(f"Received positions: m1={m1}, m2={m2}, m3={m3}")
 
             # img = hand_tracking.track(img)
             # Show the image in a window named 'Image'
@@ -194,12 +201,15 @@ def main():
             if key == ord('r'):
                 break
 
+
+            
             
     
     except KeyboardInterrupt:
         try:
-            link.close()
-            cap.release()
+            # link.close()
+
+            # cap.release()
             pass
         except:
             pass
@@ -210,10 +220,9 @@ def main():
         
         try:
             pass
-            link.close()
-            cap.release()
+            # link.close()
+            # cap.release()
         except:
             pass
-            
 if __name__ == '__main__':
     main()
