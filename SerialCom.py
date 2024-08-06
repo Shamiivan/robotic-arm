@@ -10,6 +10,8 @@ if __name__ == '__main__':
         time.sleep(2) # allow some time for the Arduino to completely reset
         
         while True:
+
+
             send_size = 0
             
             ###################################################################
